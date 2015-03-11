@@ -1,0 +1,1 @@
+/Users/Mayra/Documents/Titanium_Studio_Workspace/Chapter05_Tigram/Resources/iphone/alloy/sync/sql.js
