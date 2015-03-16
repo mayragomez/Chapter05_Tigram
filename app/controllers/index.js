@@ -42,7 +42,7 @@ user.login("tigram_admin", "tigramadmin", function(_response) {
 		$.tabGroup.open();
 		
 		//pre-populate the feed with recent photos
-	  //	$.feedController.initialize();
+	    $.feedController.initialize();
 	}
 	else
 	{
@@ -50,3 +50,7 @@ user.login("tigram_admin", "tigramadmin", function(_response) {
   		Ti.API.error('error logging in ' + _response.error);
 	}
 });
+
+Alloy.Globals.openCurrentTabWindow = function(_window) {
+	$.tabGroup.activeTab.open(_window);
+}; //chapter6

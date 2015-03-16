@@ -7,3 +7,5 @@ $.titleLabel.text = args.title || '';
 
 //save the model id for use later in app
 $.row_id = model.id || '';
+
+$.row_id = model.id || ""; //chapter6

@@ -4,15 +4,49 @@ OS_IOS && $.cameraButton.addEventListener("click", function(_event) {
 	$.cameraButtonClicked(_event);
 });
 
+$.feedTable.addEventListener("click", processTableClicks); //chapter 6
+
+function processTableClicks(_event) {
+	if (_event.source.id === "commentButton") {
+		handleCommentButtonClicked(_event);
+	} else if (_event.source.id === "locationButton") {
+		handleLocationButtonClicked(_event);
+	} else if (_event.source.id === "shareButton") {
+		handleShareButtonClicked(_event);
+	}
+}//chapter6
+
+function handleCommentButtonClicked(_event) {
+	var collection,
+	    model = null;
+
+	// handle call from mapDetail or feedRow
+	if (!_event.row) {
+		model = _event.data;
+	} else {
+		collection = Alloy.Collections.instance("Photo");
+		model = collection.get(_event.row.row_id);
+	}
+
+	var controller = Alloy.createController("comment", {
+		photo : model,
+		parentController : $
+	});
+
+	// initialize the data in the view, load content
+	controller.initialize();
+
+	// open the view
+	Alloy.Globals.openCurrentTabWindow(controller.getView());
+
+} //chapter6
+
+
 $.cameraButtonClicked = function(_event) {
 	alert("User clicked the camera button");
 
 	var photoSource = Titanium.Media.getIsCameraSupported() ? Titanium.Media.showCamera : Titanium.Media.openPhotoGallery;
 
-	//photosource is now a variable representing one of the methods above:
-	//Titanium.Media.showCamera OR Titanium.Media.openPhotoGallery
-	//the constructed object is the expected argument to that method
-	//thus, the code below is a call to that method
 	photoSource({
 		success : function(event) {
 			
@@ -90,9 +124,7 @@ function processImage(_mediaObject, _callback) {
 			}
 	});
 }
-/*
- * 
-
+ 
 function loadPhotos() {
 	var rows = [];
 
@@ -132,5 +164,5 @@ $.initialize = function() {
   loadPhotos();
 };		
 	
-  */ 
+
 
