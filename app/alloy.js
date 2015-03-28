@@ -9,3 +9,6 @@
 // object. For example:
 //
 // Alloy.Globals.someGlobalFunction = function(){};
+
+//using facebook in the latest release of appcelerator
+Alloy.Globals.fbModule = require('facebook');
