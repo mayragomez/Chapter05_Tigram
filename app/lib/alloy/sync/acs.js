@@ -13,20 +13,19 @@ function InitAdapter(config) {
 	Cloud.debug = !0;
 	config.Cloud = Cloud;
 }
-
 function Sync(method, model, options) {
 	var object_name = model.config.adapter.collection_name;
 
-	//determine which sync method to call based on the
-	//collection type in the model
 	if (object_name === "photos") {
 		processACSPhotos(model, method, options);
 	} else if (object_name === "users") {
 		processACSUsers(model, method, options);
-	} else if (object_name === "reviews"){
+	} else if (object_name === "reviews") {
 		processACSComments(model, method, opts);
+	} else if (object_name === "friends"){
+		processACSFriends(model, method, opts);
 	}
-}//modified in chapter6
+}//modified in chapter6 then again in ch8
 
 /*
 * this is a seperate handler for when the object being processed
@@ -187,9 +186,88 @@ function processACSUsers(model, method, options) {
 			}
 		});
 		break;
+		
+		case "read":
+		options.data = options.data || {};
+		model.id && (options.data.user_id = model.id);
+
+		var readMethod = model.id ? Cloud.Users.show : Cloud.Users.query;
+
+		readMethod(options.data || {}, function(e) {
+			if (e.success) {
+				model.meta = e.meta;
+				if (e.users.length === 1) {
+					options.success(e.users[0]);
+				} else {
+					options.success(e.users);
+				}
+				model.trigger("fetch");
+
+				return;
+			}
+
+			Ti.API.error("Cloud.Users.query " + e.message);
+			options.error && options.error(e.error && e.message || e);
+		});
+		break;//ch8
+
 	}
 }//end processACSUsers ch7 
 
+function processACSFriends(model, method, opts) {
+	switch (method) {
+	case "create":
+		var params = model.toJSON();
+
+		Cloud.Friends.add(params, function(e) {
+			if (e.success) {
+				model.meta = e.meta;
+				opts.success && opts.success({});
+				model.trigger("fetch");
+				return;
+			}
+			Ti.API.error(e);
+			opts.error && opts.error(e.error && e.message || e);
+			model.trigger("error");
+		});
+		break;
+
+	case "read":
+		opts.data = opts.data || {};
+		model.id && (opts.data.user_id = model.id);
+
+		Cloud.Friends.search((opts.data || {}), function(e) {
+			if (e.success) {
+				model.meta = e.meta;
+				opts.success(e.users);
+				model.trigger("fetch");
+				return;
+			} else {
+				Ti.API.error("Cloud.Friends.query " + e.message);
+				opts.error(e.error && e.message || e);
+				model.trigger("error");
+			}
+		});
+		break;
+
+	case "delete":
+		Cloud.Friends.remove({
+			user_ids : opts.data.user_ids.join(",")
+		}, function(e) {
+			Ti.API.debug(JSON.stringify(e));
+			if (e.success) {
+				model.meta = e.meta;
+				opts.success && opts.success({});
+				model.trigger("fetch");
+				return;
+			}
+			Ti.API.error("Cloud.Friends.remove: " + e);
+			opts.error && opts.error(e.error && e.message || e);
+			model.trigger("error");
+		});
+		break;
+	}
+}//ch8
 
 
 var _ = require("alloy/underscore")._;

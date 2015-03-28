@@ -11,4 +11,8 @@
 // Alloy.Globals.someGlobalFunction = function(){};
 
 //using facebook in the latest release of appcelerator
+
+//ch7
 Alloy.Globals.fbModule = require('facebook');
+//ch8
+Alloy.Globals.PW = require('progressWindown');

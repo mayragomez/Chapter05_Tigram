@@ -236,6 +236,103 @@ exports.definition = {
           			}
           		);
       		}, // end updateFacebookLoginStatus ch7
+      		
+      		getFollowers : function(_callback, _followers) {
+				var followers = Alloy.createCollection("Friend");
+				followers.fetch(
+					{
+						data : {
+            				per_page : 100,
+            				q : " ",
+            				user_id : this.id,
+            				followers : _followers || "true"
+          				},
+          				success : function(_collection, _response) {
+            				_callback && _callback(
+            					{
+              						success : true,
+              						collection : _collection
+            					}
+            				);
+          				},
+          				error : function(_model, _response) {
+            				_callback && _callback(
+            					{
+              						success : false,
+              						collection : {},
+              						error : _response
+              					}
+              				);
+          				}
+        			}
+        		);
+
+      		}, //end getFollowers
+      		
+			
+      		getFriends : function(_callback) {
+        		this.getFollowers(_callback, false);
+      		}, //getFriends
+      		
+      		followUser : function(_userid, _callback) {
+	        	// create properties for friend
+	        	var friendItem = {
+	          		"user_ids" : _userid,
+	          		"approval_required" : "false"
+	        	};
+	        	
+	        	var friendItemModel = Alloy.createModel('Friend');
+	        	
+	        	friendItemModel.save(friendItem, 
+        			{
+        				success : function(_model, _response) {
+            				_callback(
+            					{
+              						success : true
+            					}
+            				);
+          				},
+          				error : function(_model, _response) {
+            				_callback(
+            					{
+              						success : false
+            					}
+            				);
+          				}
+        			}
+        		);
+	        }, //end followUser
+	        
+	        
+      		unFollowUser : function(_userid, _callback) {
+      			var friendItemModel = Alloy.createModel('Friend');
+      			
+      			// MUST set the id so Backbone will trigger the delete event
+      			friendItemModel.id = _userid;
+      			
+      			// destroy/delete the model
+      			friendItemModel.destroy(
+      				{
+          				data : {
+            				"user_ids" : [_userid]
+          				},
+          				success : function(_model, _response) {
+            				_callback(
+            					{
+              						success : true
+            					}
+            				);
+          				},
+          				error : function(_model, _response) {
+            				_callback(
+								{
+									success : false
+								}
+							);
+          				}
+        			}
+        		);
+      		}, //end unFollowUser
 	   });
 
 		return Model;
