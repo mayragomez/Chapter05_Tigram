@@ -44,7 +44,54 @@ exports.definition = {
 					}
 				});
 			},
+			
+		findPhotosNearMe : function(_user, _location, _distance, _options) {
+        var collection = this;
 
+        // convert distance to radians if provided
+        var distance = _distance ? (_distance / 3959) : 0.00126;
+
+        if (_location === null) {
+          _options.error("Could Not Find Photos");
+          return;
+        }
+        // get all of the current users friends
+        _user.getFriends(function(_resp) {
+          if (_resp.success) {
+
+            var idList = _.pluck(_resp.collection.models, "id");
+            idList.push(_user.id);
+
+            // first we get the current location
+            var coords = [];
+            coords.push(_location.coords.longitude);
+            coords.push(_location.coords.latitude);
+
+            // set up where parameters
+            var where_params = {
+              "user_id" : {
+                "$in" : idList
+              },
+              "coordinates" : {
+                "$nearSphere" : coords,
+                "$maxDistance" : distance // 5 miles in
+                // radians
+              }
+            };
+            // set the where params on the query
+            _options.data = _options.data || {};
+            _options.data.per_page = 25;
+            _options.data.where = JSON.stringify(where_params);
+
+            // execute the query
+            collection.fetch(_options);
+          } else {
+            _options.error("Could Not Find Photos");
+            return;
+          }
+        });
+      }
+		
 		});
 		//end extend 
 		return Model;

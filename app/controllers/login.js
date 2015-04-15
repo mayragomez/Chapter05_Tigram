@@ -1,5 +1,7 @@
 var args = arguments[0] || {};
 
+$.parentController = args.parentController;
+
 //chapter 7
 $.showLoginBtn.addEventListener('click', showLoginBtnClicked);
 $.showCreateAccountBtn.addEventListener('click', showCreateAccountBtnClicked);

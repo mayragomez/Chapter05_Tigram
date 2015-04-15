@@ -16,3 +16,5 @@
 Alloy.Globals.fbModule = require('facebook');
 //ch8
 Alloy.Globals.PW = require('progressWindown');
+//Ch9
+Alloy.Globals.Map = require('ti.map');

@@ -1,4 +1,6 @@
 var args = arguments[0] || {};
+// load Geolocation library
+var geo = require("geo");
 
 OS_IOS && $.cameraButton.addEventListener("click", function(_event) {
 	$.cameraButtonClicked(_event);
@@ -41,6 +43,27 @@ function handleCommentButtonClicked(_event) {
 
 } //chapter6
 
+
+function handleLocationButtonClicked(_event) {
+
+  var collection = Alloy.Collections.instance("Photo");
+  var model = collection.get(_event.row.row_id);
+  
+
+  var customFields = model.get("custom_fields");
+
+  if (customFields && customFields.coordinates) {
+    var mapController = Alloy.createController("mapView", {
+      photo : model,
+      parentController : $
+    });
+
+    // open the view
+    Alloy.Globals.openCurrentTabWindow(mapController.getView());
+  } else {
+    alert("No Location was Saved with Photo");
+  }
+}//ch9
 
 $.cameraButtonClicked = function(_event) {
 	alert("User clicked the camera button");
@@ -93,38 +116,48 @@ $.cameraButtonClicked = function(_event) {
 };
 
 function processImage(_mediaObject, _callback) {
-	// since there is no ACS intefration yet, we will fake it
-	var parameters = {
-		"photo" : _mediaObject,
-		"title" : "Sample Photo " + new Date(),
-		"photo_sizes[preview]" : "200x200#",
-		"photo_sizes[iphone]" : "320x320#",
-		// We need this since we are showing the image immediately
-		"photo_sync_sizes[]" : "preview"
-	};
 
-	var photo = Alloy.createModel('Photo', parameters);
-		photo.save({}, {
-			success : function(_model, _response) { 
-			//	debugger;
-				Ti.API.debug('success: ' + _model.toJSON());
-				_callback({
-					model : _model,
-					message : null,
-					success : true
-				});
-			},
-			error : function(e) { //debugger;
-				Ti.API.error('error: ' + e.message);
-				_callback({
-					model : parameters,
-					message : e.message,
-					success : false
-				});
-			}
-	});
-}
- 
+  geo.getCurrentLocation(function(_coords) {
+    var parameters = {
+      "photo" : _mediaObject,
+      "title" : "Sample Photo " + new Date(),
+      "photo_sizes[preview]" : "200x200#",
+      "photo_sizes[iphone]" : "320x320#",
+      // since we are showing the image immediately
+      "photo_sync_sizes[]" : "preview"
+    };
+
+    // if we got a location, then set it
+    if (_coords) {
+      parameters.custom_fields = {
+        coordinates : [_coords.coords.longitude, _coords.coords.latitude],
+        location_string : _coords.title
+      };
+    }
+
+    var photo = Alloy.createModel('Photo', parameters);
+
+    photo.save({}, {
+      success : function(_model, _response) {
+        Ti.API.debug('success: ' + _model.toJSON());
+        _callback({
+          model : _model,
+          message : null,
+          success : true
+        });
+      },
+      error : function(e) {
+        Ti.API.error('error: ' + e.message);
+        _callback({
+          model : parameters,
+          message : e.message,
+          success : false
+        });
+      }
+    });
+  });
+}//updated ch9
+
 function loadPhotos() {
 	var rows = [];
 

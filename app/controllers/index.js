@@ -82,8 +82,8 @@ $.userLoggedInAction = function() {
 	user.showMe(function(_response) {
 		if (_response.success === true) {
 			//call the user logged in action
-			indexController.loginSuccessAction(_response);
-			//$.loginSuccessAction(_response);
+			//indexController.loginSuccessAction(_response);
+			$.loginSuccessAction(_response);
 		} else {
 			alert("Application Error\n " + _response.error.message);
 			Ti.API.error(JSON.stringify(_response.error, null, 2));

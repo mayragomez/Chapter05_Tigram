@@ -80,7 +80,7 @@ exports.definition = {
 							cloud.sessionId = e.meta.session_id;
 							
 							//callback with newly created user
-							_callback && callback(
+							_callback && _callback(
 								{
 									success: true,
 									model: new model(user)
@@ -168,7 +168,7 @@ exports.definition = {
 								}
 							);
 						} else {
-							Ti.App.error(e);
+							Ti.API.error(e);
 							
 							TAP.removeProperty("sessionId");
 							TAP.removeProperty("user");
