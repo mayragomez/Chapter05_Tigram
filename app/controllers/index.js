@@ -30,10 +30,66 @@ function doOpen() {
   }
 }
 
-// when we start up, create a user and log in
-var user = Alloy.createModel('User');
+
+function initializePushNotifications(_user) {
+
+  Alloy.Globals.pushToken = null;
+  var pushLib = require('pushNotifications');
+
+  // initialize PushNotifications
+  pushLib.initialize(_user,
+  // notification received callback
+  function(_pushData) {
+    Ti.API.info('I GOT A PUSH NOTIFICATION');
+    // get the payload from the proper place depending
+    // on what platform you are on
+    var payload;
+
+    try {
+      if (_pushData.payload) {
+        payload = JSON.parse(_pushData.payload);
+      } else {
+        payload = _pushData;
+      }
+    } catch(e) {
+      payload = {};
+    }
+
+    // display the information in an alert
+    if (OS_ANDROID) {
+      Ti.UI.createAlertDialog({
+        title : payload.android.title || "Alert",
+        message : payload.android.alert || "",
+        buttonNames : ['Ok']
+      }).show();
+    } else {
+      Ti.UI.createAlertDialog({
+        title : "Alert",
+        message : payload.alert || "",
+        buttonNames : ['Ok']
+      }).show();
+    }
+
+  },
+  // registration callback parameter
+  function(_pushInitData) {
+    if (_pushInitData.success) {
+      // save the token so we know it was initialized
+      Alloy.Globals.pushToken = _pushInitData.data.deviceToken;
+
+      Ti.API.debug("Success: Initializing Push Notifications " + JSON.stringify(_pushInitData));
+    } else {
+      alert("Error Initializing Push Notifications");
+      Alloy.Globals.pushToken = null;
+    }
+  });
+}//ch11
+
+
 
 $.loginSuccessAction = function(_options) {
+	
+	 initializePushNotifications(_options.model);//ch11
 
 	Ti.API.info('logged in user information');
 	Ti.API.info(JSON.stringify(_options.model, null, 2));
@@ -78,6 +134,7 @@ $.userNotLoggedInAction = function() {
 
 };//end user not UserNotLoggedInAction ch7
 
+
 $.userLoggedInAction = function() {
 	user.showMe(function(_response) {
 		if (_response.success === true) {
@@ -93,6 +150,10 @@ $.userLoggedInAction = function() {
 		}
 	});
 };//end UserLoggedInAction ch7
+
+// when we start up, create a user and log in
+var user = Alloy.createModel('User');
+
 
 if (user.authenticated() === true) {
 	$.userLoggedInAction();

@@ -1,6 +1,7 @@
 var args = arguments[0] || {};
 //load sharing libray 
 var sharing - require("sharing"); //ch10
+var push = require('pushNotifications');//ch11
 
 // load Geolocation library
 var geo = require("geo");
@@ -110,53 +111,86 @@ function handleLocationButtonClicked(_event) {
 }//ch9
 
 $.cameraButtonClicked = function(_event) {
-	alert("User clicked the camera button");
+  //alert("user clicked camera button");
+  var photoSource;
 
-	var photoSource = Titanium.Media.getIsCameraSupported() ? Titanium.Media.showCamera : Titanium.Media.openPhotoGallery;
+  Ti.API.debug('Ti.Media.isCameraSupported ' + Ti.Media.isCameraSupported);
 
-	photoSource({
-		success : function(event) {
-			
-			processImage(event.media, function(processResponse) {
+  if (!Ti.Media.isCameraSupported) {
+    photoSource = 'openPhotoGallery';
+  } else {
+    photoSource = 'showCamera';
+  }
 
-				if(processResponse.success){
-					//create a row
-					var row = Alloy.createController("feedRow", processResponse.model);
-	
-					//add the controller view, which is a row to the table
-					if ($.feedTable.getData().length === 0) 
-						{
-							$.feedTable.setData([]);
-							$.feedTable.appendRow(row.getView(), true);
-						} 
-					else 
-						{
-							$.feedTable.insertRowBefore(0, row.getView(), true);
-						}
-						
-				 } 
-				 else {
-					alert('Error saving photo ' + processResponse.message);					
-				 }
+  Titanium.Media[photoSource]({
+    success : function(event) {
 
-			});
-		},
-		cancel : function() {
-			//called when the user cancels taking a picture
-		},
-		error : function(error) {
-			//display alert on error
-			if (error.code == Titanium.Media.NO_CAMERA) {
-				alert("Please run this test on a device");
-			} else {
-				alert("Unexpected error" + error.code);
-			}
-		},
-		saveToPhotoGallery : false,
-		allowEditing : true,
-		//only allow for photos, no video
-		mediaTypes : [Ti.Media.MEDIA_TYPE_PHOTO]
-	});
+      Alloy.Globals.PW.showIndicator("Saving Image", false);
+      var ImageFactory = require('ti.imagefactory');
+
+      if (OS_ANDROID || event.media.width > 700) {
+        var w, h;
+        w = event.media.width * .50;
+        h = event.media.height * .50;
+        $.resizedPhoto = ImageFactory.imageAsResized(event.media, {
+          width : w,
+          height : h
+        });
+      } else {
+        // we do not need to compress here
+        $.resizedPhoto = event.media;
+      }
+
+      processImage($.resizedPhoto, function(_photoResp) {
+
+        Alloy.Globals.PW.hideIndicator();
+
+        if (_photoResp.success) {
+
+          // create the row
+          var row = Alloy.createController("feedRow", _photoResp.model);
+
+          // add the controller view, which is a row to the table
+          if ($.feedTable.getData().length === 0) {
+            $.feedTable.setData([]);
+            $.feedTable.appendRow(row.getView(), true);
+          } else {
+            $.feedTable.insertRowBefore(0, row.getView(), true);
+          }
+
+          //now add to the backbone collection
+          var collection = Alloy.Collections.instance("Photo");
+          collection.add(_photoResp.model, {
+            at : 0,
+            silent : true
+          });
+
+          // notify followers
+          notifyFollowers(_photoResp.model, "New Photo Added");
+
+        } else {
+          alert("Error saving photo " + processResponse.message);
+        }
+
+      });
+    },
+    cancel : function() {
+      // called when user cancels taking a picture
+    },
+    error : function(error) {
+      // display alert on error
+      if (error.code == Titanium.Media.NO_CAMERA) {
+        alert('Please run this test on device');
+      } else {
+        alert('Unexpected error: ' + error.code);
+      }
+    },
+    saveToPhotoGallery : false,
+    allowEditing : true,
+    // only allow for photos, no video
+    mediaTypes : [Ti.Media.MEDIA_TYPE_PHOTO]
+  });
+
 };
 
 function processImage(_mediaObject, _callback) {
@@ -235,11 +269,6 @@ function loadPhotos() {
 		}
 	});
 }
-
-//load photos on startup
-$.initialize = function() {
-  loadPhotos();
-};	
 
 	
 function showLocalImages() {
@@ -354,6 +383,49 @@ function mapAnnotationClicked(_event) {
     Ti.API.info('clickSource ' + clickSource);
   }
 };
-	
 
+
+function notifyFollowers(_model, _message) {
+
+  var currentUser = Alloy.Globals.currentUser;
+
+  currentUser.getFollowers(function(_resp) {
+    if (_resp.success) {
+      $.followersList = _.pluck(_resp.collection.models, "id");
+
+      if ($.followersList.length) {
+
+        // send a push notification to all friends
+        var msg = _message + " " + currentUser.get("email");
+
+        // make the api call using the library
+        push.sendPush({
+          payload : {
+            custom : {
+              photo_id : _model.get("id"),
+            },
+            sound : "default",
+            alert : msg
+          },
+          to_ids : $.followersList.join(),
+        }, function(_repsonsePush) {
+          if (_repsonsePush.success) {
+            alert("Notified friends of new photo");
+          } else {
+            alert("Error notifying friends of new photo");
+          }
+        });
+      }
+    } else {
+      alert("Error updating friends and followers");
+    }
+  });
+
+}//ch11	
+
+
+//load photos on startup
+$.initialize = function() {
+  loadPhotos();
+};	
 

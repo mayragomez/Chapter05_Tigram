@@ -1,5 +1,5 @@
 var args = arguments[0] || {};
-
+var push = require('pushNotifications');//ch11
 // EVENT LISTENERS
 // on android, we need the change event not the click event
 $.filter.addEventListener( OS_ANDROID ? 'change' : 'click', filterClicked);
@@ -40,32 +40,55 @@ function filterClicked(_event) {
 };//ch8
 
 function followBtnClicked(_event) {
+
   Alloy.Globals.PW.showIndicator("Updating User");
 
-	var currentUser = Alloy.Globals.currentUser;
-	var selUser = getModelFromSelectedRow(_event);
+  var currentUser = Alloy.Globals.currentUser;
+  var selUser = getModelFromSelectedRow(_event);
 
-	currentUser.followUser(selUser.model.id, function(_resp) {
-		if (_resp.success) {
+  currentUser.followUser(selUser.model.id, function(_resp) {
+    if (_resp.success) {
 
-			// update the lists IF it was successful
-			updateFollowersFriendsLists(function() {
+      // update the lists IF it was successful
+      updateFollowersFriendsLists(function() {
 
-				// update the UI to reflect the change
-				getAllUsersExceptFriends(function() {
-					Alloy.Globals.PW.hideIndicator();
-				});
-			});
+        // update the UI to reflect the change
+        getAllUsersExceptFriends(function() {
+          Alloy.Globals.PW.hideIndicator();
+          alert("You are now following " + selUser.displayName);
 
-		} else {
-			alert("Error trying to follow " + selUser.displayName);
-		}
-		Alloy.Globals.PW.hideIndicator();
+          // send a push notification to the user to let
+          // them know they have a new friend
+          var currentUser = Alloy.Globals.currentUser;
 
-	});
+          push.sendPush({
+            payload : {
+              custom : {},
+              sound : "default",
+              alert : "You have a new friend! " + currentUser.get("email")
+            },
+            to_ids : selUser.model.id,
+          }, function(_repsonsePush) {
+            if (_repsonsePush.success) {
+              alert("Notified user of new friend");
+            } else {
+              alert("Error notifying user of new friend");
+            }
+          });
 
-	_event.cancelBubble = true;
-};//end followBtnClicked
+        });
+
+      });
+
+    } else {
+      alert("Error trying to follow " + selUser.displayName);
+    }
+    Alloy.Globals.PW.hideIndicator();
+
+  });
+
+  _event.cancelBubble = true;
+};//end followBtnClicked //ch11
 
 function getModelFromSelectedRow(_event) {
 	var item = _event.section.items[_event.itemIndex];

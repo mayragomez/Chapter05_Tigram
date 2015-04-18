@@ -2,6 +2,7 @@
 var parameters = arguments[0] || {};
 var currentPhoto = parameters.photo || {};
 var parentController = parameters.parentController ||{};
+var push = require('pushNotifiactions');//ch11
 
 var comment = Alloy.Collections.instance("Comment");
 
@@ -144,34 +145,58 @@ function doOpen() {
 }
 
 function addComment(_content) {
-	var comment = Alloy.createModel('Comment');
-	var params = {
-		photo_id : currentPhoto.id,
-		content : _content,
-		allow_duplicate : 1
-	};
+  var comment = Alloy.createModel('Comment');
+  var params = {
+    photo_id : currentPhoto.id,
+    content : _content,
+    allow_duplicate : 1
+  };
 
-	comment.save(params, {
-		success : function(_model, _response) {
-			Ti.API.debug('success: ' + _model.toJSON());
-			var row = Alloy.createController("commentRow", _model);
+  comment.save(params, {
+    success : function(_model, _response) {
+      Ti.API.debug('success: ' + _model.toJSON());
+      var row = Alloy.createController("commentRow", _model);
 
-			// add the controller view, which is a row to the table
-			if ($.commentTable.getData().length === 0) {
-				$.commentTable.setData([]);
-				$.commentTable.appendRow(row.getView(), true);
-			} else {
-				$.commentTable.insertRowBefore(0, row.getView(), true);
-			}
+      // add the controller view, which is a row to the table
+      if ($.commentTable.getData().length === 0) {
+        $.commentTable.setData([]);
+        $.commentTable.appendRow(row.getView(), true);
+      } else {
+        $.commentTable.insertRowBefore(0, row.getView(), true);
+      }
 
-			//notifyFollowers(_model, currentPhoto, "New comment posted by");
-		},
-		error : function(e) {
-			Ti.API.error('error: ' + e.message);
-			alert('Error saving new comment ' + e.message);
-		}
-	});
+      notifyFollowers(_model, currentPhoto, "New comment posted by");
+    },
+    error : function(e) {
+      Ti.API.error('error: ' + e.message);
+      alert('Error saving new comment ' + e.message);
+    }
+  });
 };
+
+function notifyFollowers(_model, _photo, _message) {
+  var currentUser = Alloy.Globals.currentUser;
+
+  push.sendPush({
+    payload : {
+      custom : {
+        from : currentUser.get("id"),
+        commentedOn : _photo.id,
+        commentedId : _model.id,
+      },
+      sound : "default",
+      alert : _message + " " + currentUser.get("email")
+    },
+    to_ids : _photo.get("user").id
+  }, function(_repsonsePush) {
+    if (_repsonsePush.success) {
+      alert("Notified user of new comment");
+    } else {
+      alert("Error notifying user of new comment");
+    }
+
+  });
+}
 
 
 $.initialize = function(){
