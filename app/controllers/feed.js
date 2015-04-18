@@ -1,4 +1,7 @@
 var args = arguments[0] || {};
+//load sharing libray 
+var sharing - require("sharing"); //ch10
+
 // load Geolocation library
 var geo = require("geo");
 
@@ -43,7 +46,21 @@ function filterTabbedBarClicked(_event) {
   }
 }//ch9
 
+function handleShareButtonClicked(_event) {
+  var collection, model;
 
+  if (!_event.row) {
+    model = _event.data;
+  } else {
+    collection = Alloy.Collections.instance("Photo");
+    model = collection.get(_event.row.row_id);
+  }
+
+  // commonjs library for sharing
+  sharing.sharingOptions({
+    model : model
+  });
+}//Ch10
 
 function handleCommentButtonClicked(_event) {
 	var collection,

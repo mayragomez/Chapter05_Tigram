@@ -15,10 +15,10 @@
     <analytics>true</analytics>
     <guid>98517f1e-75fd-4c22-8c74-ad0f3b4b86d2</guid>
     <property name="ti.ui.defaultunit" type="string">dp</property>
-    
     <!--using facebook appid-->
     <property name="ti.facebook.appid">1580469318879903</property>
-   
+    <property name="twitter.consumerKey">ADD-YOUR-TWITTER-CONSUMER-KEY-HERE</property>
+    <property name="twitter.consumerSecret">ADD-YOUR-API-TWITTER-COMSUMER-SECRET-HERE</property>
     <ios>
         <plist>
             <dict>
@@ -55,6 +55,8 @@
     </mobileweb>
     <modules>
         <module platform="commonjs">ti.cloud</module>
+        <module platform="android">facebook</module>
+        <module platform="iphone">facebook</module>
     </modules>
     <deployment-targets>
         <target device="android">true</target>
